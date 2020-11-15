@@ -1,0 +1,3 @@
+include ':LiveDataBus'
+include ':app'
+rootProject.name = "LiveDataDemo"
