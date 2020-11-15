@@ -1,5 +1,5 @@
 # LiveDataBus [![version](https://jitpack.io/v/fmtjava/LiveDataBus.svg)](https://jitpack.io/#fmtjava/LiveDataBus)
-基于LiveData实现的一款不用发注册，不会内存泄露的轻量级消息总线框架，支持订阅普通事件消息和粘性事件
+基于LiveData实现的一款不用反注册，不会内存泄露的轻量级消息总线框架，支持订阅普通事件消息和粘性事件
 
 # How to
 ## Step 1. Add the JitPack repository to your build file
