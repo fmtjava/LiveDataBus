@@ -22,7 +22,6 @@ implementation 'com.github.fmtjava:LiveDataBus:1.0.0'
   LiveDataBus.with<User>("login").observe(this, {
             tv_text.text = it.name
         })
-
 ```
 
 ## 发送普通消息事件
