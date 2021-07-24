@@ -24,11 +24,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun sendStick(view: View) {
-        LiveDataBus.with<String>("name").postStickData("fmt")
+        LiveDataBus.with<String>("name").postStickData("fmt Stick from Main")
     }
 
     fun sendData(view: View) {
-        val user = User("fmt android")
+        val user = User("fmt sendData from Main")
         LiveDataBus.with<User>("login").postData(user)
     }
 

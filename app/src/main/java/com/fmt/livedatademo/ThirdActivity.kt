@@ -17,7 +17,7 @@ class ThirdActivity : AppCompatActivity() {
     }
 
     fun sendData(view: View) {
-        val user = User("fmt java")
+        val user = User("fmt Data from Third")
         LiveDataBus.with<User>("login").postData(user)
     }
 }

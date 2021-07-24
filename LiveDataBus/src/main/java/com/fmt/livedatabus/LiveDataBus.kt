@@ -17,7 +17,7 @@ object LiveDataBus {
     private val eventTypeMap =
         ConcurrentHashMap<LifecycleOwner, CopyOnWriteArrayList<String>>()
 
-    //获取对应事件的LiveData
+    //注册对应事件
     fun <T> with(eventName: String): StickLiveData<T> {
         var liveData = eventMap[eventName]
 
@@ -28,7 +28,7 @@ object LiveDataBus {
         return liveData as StickLiveData<T>
     }
 
-    //获取对应事件关联的页面集合
+    //获取当前事件注册的页面集合
     private fun getLifecycleOwners(eventName: String): CopyOnWriteArrayList<LifecycleOwner> {
         var lifecycleOwners = lifecycleMap[eventName]
         if (lifecycleOwners == null) {
@@ -38,7 +38,7 @@ object LiveDataBus {
         return lifecycleOwners
     }
 
-    //添加事件对应的页面
+    //保存页面事件
     private fun addLifecycleOwner(eventName: String, lifecycleOwner: LifecycleOwner) {
         val lifecycleOwners = getLifecycleOwners(eventName)
         if (!lifecycleOwners.contains(lifecycleOwner)) {
@@ -46,7 +46,7 @@ object LiveDataBus {
         }
     }
 
-    //获取每一个页面对应的事件集合
+    //获取当前页面注册的哪些事件
     private fun getEventTypeList(lifecycleOwner: LifecycleOwner): CopyOnWriteArrayList<String> {
         var eventTypeList = eventTypeMap[lifecycleOwner]
         if (eventTypeList == null) {
@@ -56,7 +56,6 @@ object LiveDataBus {
         return eventTypeList
     }
 
-    //为页面添加对应的事件
     private fun addEventType(eventName: String, lifecycleOwner: LifecycleOwner) {
         val eventTypeList = getEventTypeList(lifecycleOwner)
         if (!eventTypeList.contains(eventName)) {
@@ -64,6 +63,9 @@ object LiveDataBus {
         }
     }
 
+    /**
+     * 自定义粘性LiveData
+     */
     class StickLiveData<T>(private val eventName: String) : LiveData<T>() {
 
         internal var mStickData: T? = null
@@ -98,31 +100,42 @@ object LiveDataBus {
 
         fun observeStick(owner: LifecycleOwner, observer: Observer<in T>, stick: Boolean = true) {
             super.observe(owner, StickWarpObserver(this, observer, stick))
+            //添加页面事件
             addLifecycleOwner(eventName, owner)
-            addEventType(eventName, owner)
-            owner.lifecycle.addObserver(LifecycleEventObserver { source, event ->
-                if (event == Lifecycle.Event.ON_DESTROY) {
-                    //页面销毁时，在该事件对应的页面集合中移除该页面
-                    getLifecycleOwners(eventName).remove(source)
-                    //页面销毁时，获取该页面包含的事件集合，遍历判断每一种事件类型对应的页面集合是否为空，若为空，则移除该事件
-                    getEventTypeList(owner).forEach { eventType ->
-                        if (getLifecycleOwners(eventType).isEmpty()) {
-                            eventMap.remove(eventType)
+            //监听页面的生命周期
+            if (!eventTypeMap.containsKey(owner)) {
+                owner.lifecycle.addObserver(LifecycleEventObserver { source, event ->
+                    if (event == Lifecycle.Event.ON_DESTROY) {
+                        //1.移除当前页面注册的事件
+                        val lifecycleOwners = getLifecycleOwners(eventName)
+                        lifecycleOwners.remove(source)
+
+                        //2.当前页面销毁时，判断其它未销毁的页面仍注册着该事件
+                        //2.1 若没有其它页面注册，则移除
+                        val eventTypeList = getEventTypeList(owner)
+
+                        eventTypeList.forEach { eventType ->
+                            if (getLifecycleOwners(eventType).isEmpty()) {
+                                eventMap.remove(eventType)
+                                lifecycleMap.remove(eventType)
+                            }
                         }
+                        eventTypeMap.remove(owner)
                     }
-                }
-            })
+                })
+            }
+            addEventType(eventName, owner)
         }
     }
 
     //装饰者模式对原先的Observer进行包装
-    class StickWarpObserver<T>(
+    internal class StickWarpObserver<T>(
         private val stickLiveData: StickLiveData<T>,
         private val observer: Observer<in T>,
-        private val stick: Boolean//是否支持黏性事件
+        private val stick: Boolean
     ) : Observer<T> {
 
-        //创建Observer时mLastVersion的默认赋值为LiveData的Version,规避黏性事件
+        //创建Observer时默认赋值为LiveData的Version,防止黏性事件
         private var mLastVersion = stickLiveData.mVersion
 
         override fun onChanged(t: T) {
