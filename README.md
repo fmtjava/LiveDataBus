@@ -13,7 +13,7 @@ allprojects {
 ```
 ##  Step 2. Add the dependency
 ```
-implementation 'com.github.fmtjava:LiveDataBus:1.0.0'
+implementation 'com.github.fmtjava:LiveDataBus:1.0.1'
 ```
 
 ## 订阅普通消息事件
