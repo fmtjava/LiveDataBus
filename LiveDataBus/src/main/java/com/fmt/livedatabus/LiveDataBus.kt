@@ -68,28 +68,34 @@ object LiveDataBus {
      */
     class StickLiveData<T>(private val eventName: String) : LiveData<T>() {
 
-        internal var mStickData: T? = null
-        internal var mVersion = 0
+        internal var mStickData: T? = null//粘性事件对应的数据
+        internal var mVersion = 0//记录事件发送的次数
 
+        //支持主线程中发送数据
         fun setData(data: T) {
             setValue(data)
         }
 
+        //支持主线程、子线程发送数据
         fun postData(data: T) {
             postValue(data)
         }
 
+        //支持主线程中发送粘性数据
         fun setStickData(data: T) {
             mStickData = data
             setValue(data)
         }
 
+        //支持主线程、子线程中发送粘性数据
         fun postStickData(data: T) {
             mStickData = data
             postValue(data)
         }
 
+        //发送数据最终都会走到这里
         override fun setValue(value: T) {
+            //记录发送的次数
             mVersion++
             super.setValue(value)
         }
@@ -98,6 +104,7 @@ object LiveDataBus {
             observeStick(owner, observer, false)
         }
 
+        //stick --> 用于区分是否接受粘性事件
         fun observeStick(owner: LifecycleOwner, observer: Observer<in T>, stick: Boolean = true) {
             super.observe(owner, StickWarpObserver(this, observer, stick))
             //添加页面事件
@@ -139,6 +146,10 @@ object LiveDataBus {
         private var mLastVersion = stickLiveData.mVersion
 
         override fun onChanged(t: T) {
+            /**
+             * 在这里控制是否接受粘否，StickWarpObserver本质上没有改变原先的粘性事件发送，
+             * 只是在onChanged回调时，通过stick判断是否执行被装饰的Observer的onChanged方法
+             */
             if (mLastVersion >= stickLiveData.mVersion) {
                 if (stick && stickLiveData.mStickData != null) {
                     observer.onChanged(t)
